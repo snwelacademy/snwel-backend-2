@@ -31,6 +31,18 @@ async function registerUser(userData) {
             if (defaultRole) {
                 roleIds = [defaultRole._id];
             }
+            else {
+                const createdDefaultRole = await Role_1.RoleModel.findOneAndUpdate({ name: constants_1.Constants.ROLES.USER }, { name: constants_1.Constants.ROLES.USER, description: 'Default application user', permissions: [], isSystem: true, isActive: true }, { upsert: true, new: true });
+                if (createdDefaultRole) {
+                    roleIds = [createdDefaultRole._id];
+                }
+            }
+        }
+        if (roleIds.length === 0) {
+            const fallbackRole = await Role_1.RoleModel.findOne({ name: { $in: [constants_1.Constants.ROLES.USER, 'USER', 'user'] } });
+            if (fallbackRole) {
+                roleIds = [fallbackRole._id];
+            }
         }
         if (roleIds.length === 0) {
             throw new Error('No valid roles found');

@@ -413,8 +413,11 @@ async function resendOtp(params: { token?: string; verificationId?: string }) {
         };
         await enrollment.save();
 
-        const user = await UserModel.findById(enrollment.userId as any);
-        await sendOtp(newOtp.otp, (user as any)?.phone, (user as any)?.email);
+        const user = enrollment.userId ? await UserModel.findById(enrollment.userId as any) : null;
+        const phone = enrollment.applicant?.phone || user?.phone;
+        const email = enrollment.applicant?.email || user?.email;
+        
+        await sendOtp(newOtp.otp, phone, email);
 
         const newToken = generateJwtToken({
             enrollmentId: enrollment._id.toString(),

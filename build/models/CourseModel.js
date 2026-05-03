@@ -112,7 +112,13 @@ CourseSchema.pre('save', async function (next) {
 CourseSchema.plugin(mongoose_paginate_v2_1.default);
 CourseSchema.index({ slug: 1 }, { unique: true });
 CourseSchema.index({ title: 'text' });
-CourseSchema.index({ categories: 1 });
 CourseSchema.index({ status: 1 });
-CourseSchema.index({ isPopular: 1 });
+CourseSchema.index({ status: 1, createdAt: -1 });
+CourseSchema.index({ categories: 1, status: 1 });
+CourseSchema.index({ isPopular: 1, status: 1 });
+CourseSchema.index({ isPremium: 1, status: 1 });
+CourseSchema.index({ rating: -1 });
+CourseSchema.index({ createdAt: -1 });
+CourseSchema.index({ 'qualifications': 1 });
+CourseSchema.index({ 'trainingModes': 1 });
 exports.CourseModel = mongoose_1.default.model('Course', CourseSchema);

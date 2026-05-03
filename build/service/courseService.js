@@ -54,6 +54,7 @@ const getAllCourses = async (options, adminMode = false) => {
             });
         }
         const skip = (page - 1) * limit;
+        console.log({ query, skip, limit });
         const users = await CourseModel_1.CourseModel
             .find(query)
             .skip(skip)
@@ -64,6 +65,7 @@ const getAllCourses = async (options, adminMode = false) => {
             .populate('trainingModes', '_id name code')
             .populate('curriculum.curriculumType', 'name');
         const count = await CourseModel_1.CourseModel.countDocuments(query);
+        console.log({ users, count });
         return (0, helpers_1.convertToPagination)(users, count, paginationData.limit, paginationData.offset);
     }
     catch (error) {

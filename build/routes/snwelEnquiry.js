@@ -9,11 +9,12 @@ const snwelEnquiryController_1 = require("../controllers/snwelEnquiryController"
 const validateSchema_1 = require("../middleware/validateSchema");
 const snwelEnquirySchema_1 = require("../entity-schema/snwelEnquirySchema");
 const passport_1 = __importDefault(require("passport"));
+const permissionMiddleware_1 = require("../middleware/permissionMiddleware");
 const router = (0, express_1.Router)();
 exports.SnwelEnquiryRouter = router;
 router.post('/', (0, validateSchema_1.validateSchema)(snwelEnquirySchema_1.createEnquirySchema), snwelEnquiryController_1.createEnquiryController);
-router.get('/export', passport_1.default.authenticate('jwt', { session: false }), snwelEnquiryController_1.exportEnquiriesController);
-router.get('/', passport_1.default.authenticate('jwt', { session: false }), snwelEnquiryController_1.getAllEnquiriesController);
-router.get('/:id', passport_1.default.authenticate('jwt', { session: false }), snwelEnquiryController_1.getEnquiryByIdController);
-router.put('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, validateSchema_1.validateSchema)(snwelEnquirySchema_1.updateEnquirySchema), snwelEnquiryController_1.updateEnquiryByIdController);
-router.delete('/:id', passport_1.default.authenticate('jwt', { session: false }), snwelEnquiryController_1.deleteEnquiryByIdController);
+router.get('/export', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('SNWEL_ENQUIRY_EXPORT'), snwelEnquiryController_1.exportEnquiriesController);
+router.get('/', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('SNWEL_ENQUIRY_VIEW'), snwelEnquiryController_1.getAllEnquiriesController);
+router.get('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('SNWEL_ENQUIRY_VIEW'), snwelEnquiryController_1.getEnquiryByIdController);
+router.put('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('SNWEL_ENQUIRY_UPDATE'), (0, validateSchema_1.validateSchema)(snwelEnquirySchema_1.updateEnquirySchema), snwelEnquiryController_1.updateEnquiryByIdController);
+router.delete('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('SNWEL_ENQUIRY_DELETE'), snwelEnquiryController_1.deleteEnquiryByIdController);

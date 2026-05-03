@@ -11,7 +11,7 @@ exports.ClientUserController = ClientUserController;
 _a = ClientUserController;
 ClientUserController.getProfile = (0, catchAsync_1.catchAsync)(async (req, res) => {
     var _b;
-    const userId = (_b = req === null || req === void 0 ? void 0 : req.user) === null || _b === void 0 ? void 0 : _b._id;
+    const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
     if (!userId) {
         throw new Error('User ID is required');
     }
@@ -23,7 +23,7 @@ ClientUserController.getProfile = (0, catchAsync_1.catchAsync)(async (req, res) 
 });
 ClientUserController.updateProfile = (0, catchAsync_1.catchAsync)(async (req, res) => {
     var _b;
-    const userId = (_b = req === null || req === void 0 ? void 0 : req.user) === null || _b === void 0 ? void 0 : _b._id;
+    const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
     const updateData = req.body;
     if (!userId) {
         throw new Error('User ID is required');
@@ -36,7 +36,7 @@ ClientUserController.updateProfile = (0, catchAsync_1.catchAsync)(async (req, re
 });
 ClientUserController.changePassword = (0, catchAsync_1.catchAsync)(async (req, res) => {
     var _b;
-    const userId = (_b = req === null || req === void 0 ? void 0 : req.user) === null || _b === void 0 ? void 0 : _b._id;
+    const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
     const { oldPassword, newPassword } = req.body;
     if (!userId) {
         throw new Error('User ID is required');
@@ -46,7 +46,7 @@ ClientUserController.changePassword = (0, catchAsync_1.catchAsync)(async (req, r
 });
 ClientUserController.deleteAccount = (0, catchAsync_1.catchAsync)(async (req, res) => {
     var _b;
-    const userId = (_b = req === null || req === void 0 ? void 0 : req.user) === null || _b === void 0 ? void 0 : _b._id;
+    const userId = (_b = req.user) === null || _b === void 0 ? void 0 : _b._id;
     const { password } = req.body;
     if (!userId) {
         throw new Error('User ID is required');

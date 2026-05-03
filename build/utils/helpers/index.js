@@ -100,7 +100,7 @@ function generateOTP(length = 6) {
 }
 exports.generateOTP = generateOTP;
 function generateOTPObject({ length = 6 }) {
-    const expiry = (0, dayjs_1.default)(Date.now()).add(1, 'year').toDate();
+    const expiry = (0, dayjs_1.default)(Date.now()).add(5, 'minute').toDate();
     return {
         otp: generateOTP(length),
         expirationTime: expiry,
@@ -133,15 +133,15 @@ function generateRandomPassword(length) {
 }
 exports.generateRandomPassword = generateRandomPassword;
 const extractListOptions = (req) => {
-    const _a = req.query, { limit, page, search } = _a, rest = __rest(_a, ["limit", "page", "search"]);
+    const _a = req.query, { limit, page, search, filter } = _a, rest = __rest(_a, ["limit", "page", "search", "filter"]);
+    console.log({ REQQUERY: req.query });
     const parsedLimit = limit ? parseInt(limit, 10) : 10;
     const parsedPage = page ? parseInt(page, 10) : 1;
-    const filter = Object.assign({}, rest);
     return {
         limit: parsedLimit,
         page: parsedPage,
         search: search,
-        filter
+        filter: filter || Object.assign({}, rest)
     };
 };
 exports.extractListOptions = extractListOptions;

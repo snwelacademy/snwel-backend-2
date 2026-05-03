@@ -65,4 +65,8 @@ CourseCategorySchema.pre('save', async function (next) {
         next(error);
     }
 });
+CourseCategorySchema.index({ slug: 1 }, { unique: true });
+CourseCategorySchema.index({ isActive: 1 });
+CourseCategorySchema.index({ parentCategory: 1 });
+CourseCategorySchema.index({ isPremium: 1 });
 exports.CourseCategoryModel = mongoose_1.default.model('CourseCategory', CourseCategorySchema);

@@ -18,9 +18,15 @@ const blogSchema = new mongoose_1.Schema({
     tags: { type: [String], default: [] },
     published: { type: Boolean, default: false },
     publishedAt: { type: Date },
+    isFeatured: { type: Boolean, default: false },
     views: { type: Number, default: 0 },
     category: { type: mongoose_1.Schema.ObjectId, default: null, ref: 'BlogCategory' }
 }, { timestamps: true });
+blogSchema.index({ published: 1, createdAt: -1 });
+blogSchema.index({ isFeatured: 1, published: 1 });
+blogSchema.index({ tags: 1, published: 1 });
+blogSchema.index({ category: 1, published: 1 });
+blogSchema.index({ slug: 1 });
 blogSchema.plugin(mongoose_paginate_v2_1.default);
 blogSchema.plugin(mongoose_delete_1.default, { deletedAt: true, overrideMethods: 'all' });
 const Blog = (0, mongoose_1.model)('Blog', blogSchema);

@@ -9,11 +9,12 @@ const jobApplicationController_1 = require("../controllers/jobApplicationControl
 const validateSchema_1 = require("../middleware/validateSchema");
 const jobApplication_1 = require("../entity-schema/jobApplication");
 const passport_1 = __importDefault(require("passport"));
+const permissionMiddleware_1 = require("../middleware/permissionMiddleware");
 const router = (0, express_1.Router)();
 exports.JobApplicationRouter = router;
 router.post('/', (0, validateSchema_1.validateSchema)(jobApplication_1.createJobApplicationSchema), jobApplicationController_1.createJobApplicationController);
-router.get('/export', jobApplicationController_1.exportJobApplicationsController);
-router.get('/', passport_1.default.authenticate('jwt', { session: false }), jobApplicationController_1.getAllJobApplicationsController);
-router.get('/:id', passport_1.default.authenticate('jwt', { session: false }), jobApplicationController_1.getJobApplicationByIdController);
-router.put('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, validateSchema_1.validateSchema)(jobApplication_1.updateJobApplicationSchema), jobApplicationController_1.updateJobApplicationByIdController);
-router.delete('/:id', passport_1.default.authenticate('jwt', { session: false }), jobApplicationController_1.deleteJobApplicationByIdController);
+router.get('/export', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('JOB_APP_EXPORT'), jobApplicationController_1.exportJobApplicationsController);
+router.get('/', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('JOB_APP_VIEW'), jobApplicationController_1.getAllJobApplicationsController);
+router.get('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('JOB_APP_VIEW'), jobApplicationController_1.getJobApplicationByIdController);
+router.put('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('JOB_APP_UPDATE'), (0, validateSchema_1.validateSchema)(jobApplication_1.updateJobApplicationSchema), jobApplicationController_1.updateJobApplicationByIdController);
+router.delete('/:id', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('JOB_APP_DELETE'), jobApplicationController_1.deleteJobApplicationByIdController);

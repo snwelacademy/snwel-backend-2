@@ -38,5 +38,8 @@ const RoleSchema = new mongoose_1.Schema({
     isActive: { type: Boolean, default: true },
     isSystem: { type: Boolean, default: false }
 }, { timestamps: true });
+RoleSchema.index({ name: 1 }, { unique: true });
+RoleSchema.index({ isActive: 1 });
+RoleSchema.index({ isSystem: 1 });
 RoleSchema.plugin(mongoose_paginate_v2_1.default);
 exports.RoleModel = mongoose_1.default.model('Role', RoleSchema);

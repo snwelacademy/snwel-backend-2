@@ -32,9 +32,12 @@ passport_1.default.use('login', new localStrategy({
 passport_1.default.use(new passport_jwt_1.Strategy(jwtOptions, async (jwtPayload, done) => {
     try {
         const user = await User_1.UserModel.findById(jwtPayload.user._id)
-            .populate('roles', 'name permissions');
+            .populate({
+            path: 'roles',
+            select: 'name permissions',
+            populate: { path: 'permissions', select: 'code name' }
+        });
         if (user) {
-            console.log("User", { roles: user.roles });
             return done(null, user);
         }
         else {

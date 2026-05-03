@@ -4,9 +4,12 @@ exports.getIntegrationTypesController = exports.deleteIntegrationByIdController 
 const IntegrationService_1 = require("../service/IntegrationService");
 const appResponse_1 = require("../utils/helpers/appResponse");
 const catchAsync_1 = require("../utils/helpers/catchAsync");
+const notificationService_1 = require("../service/notificationService");
 const createIntegrationController = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const integrationData = req.body;
     const newIntegration = await (0, IntegrationService_1.createIntegration)(integrationData);
+    const ns = await notificationService_1.NotificationService.getInstance();
+    await ns.refreshSettings();
     (0, appResponse_1.successResponse)(newIntegration, res, { message: 'Integration created successfully!' });
 });
 exports.createIntegrationController = createIntegrationController;
@@ -32,12 +35,16 @@ const updateIntegrationByIdController = (0, catchAsync_1.catchAsync)(async (req,
     if (!updatedIntegration) {
         return (0, appResponse_1.errorResponse)('Integration not found', res);
     }
+    const ns = await notificationService_1.NotificationService.getInstance();
+    await ns.refreshSettings();
     (0, appResponse_1.successResponse)(updatedIntegration, res, { message: 'Integration updated successfully!' });
 });
 exports.updateIntegrationByIdController = updateIntegrationByIdController;
 const deleteIntegrationByIdController = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const { id } = req.params;
     await (0, IntegrationService_1.deleteIntegrationById)(id);
+    const ns = await notificationService_1.NotificationService.getInstance();
+    await ns.refreshSettings();
     (0, appResponse_1.successResponse)(null, res, { message: 'Integration deleted successfully!' });
 });
 exports.deleteIntegrationByIdController = deleteIntegrationByIdController;

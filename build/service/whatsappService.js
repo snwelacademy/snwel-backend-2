@@ -30,10 +30,10 @@ const sendWhatsAppMessage = async (phoneNumber, message) => {
     try {
         const url = new URL(whatsappSettings.url);
         url.searchParams.append("api_key", whatsappSettings.appKey);
-        url.searchParams.append("sender", whatsappSettings.authKey);
-        url.searchParams.append("to", phoneNumber);
-        url.searchParams.append("message", phoneNumber);
-        const response = await axios_1.default.post(url.toString());
+        const sanitizedNumber = phoneNumber.replace(/\D/g, '');
+        url.searchParams.append("number", sanitizedNumber);
+        url.searchParams.append("msg", message);
+        const response = await axios_1.default.get(url.toString());
         return response.data;
     }
     catch (error) {

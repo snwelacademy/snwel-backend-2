@@ -13,12 +13,14 @@ const dbClient_1 = __importDefault(require("./db/dbClient"));
 const cors_1 = __importDefault(require("cors"));
 const helmet_1 = __importDefault(require("helmet"));
 const UserManagement_1 = require("./modules/UserManagement");
+const notificationService_1 = require("./service/notificationService");
 const app = (0, express_1.default)();
 exports.app = app;
 const initializeApp = async () => {
     try {
         await (0, dbClient_1.default)();
         await (0, UserManagement_1.initializeUserManagement)();
+        await notificationService_1.NotificationService.getInstance();
         console.log('Application initialized successfully');
     }
     catch (error) {

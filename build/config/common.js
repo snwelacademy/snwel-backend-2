@@ -8,7 +8,7 @@ const zod_1 = __importDefault(require("zod"));
 const dotenv_1 = __importDefault(require("dotenv"));
 dotenv_1.default.config();
 const CommonConfigSchema = zod_1.default.object({
-    DATABASE_URL: zod_1.default.string(),
+    DATABASE_URL: zod_1.default.string().min(1, 'DATABASE_URL is required'),
     PORT: zod_1.default.number(),
     JWT_SECRET: zod_1.default.string(),
     DATA_LIMIT: zod_1.default.number(),
@@ -22,7 +22,7 @@ exports.CommonConfig = {
     FRONT_URL: process.env.FRONT_URL || (process.env.NODE_ENV === 'production' ? "https://snwelacademy.in" : 'http://localhost:3000')
 };
 try {
-    CommonConfigSchema.parseAsync(exports.CommonConfig);
+    CommonConfigSchema.parse(exports.CommonConfig);
     console.log("Configs validated");
 }
 catch (error) {

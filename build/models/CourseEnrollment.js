@@ -30,8 +30,14 @@ const mongoose_1 = __importStar(require("mongoose"));
 const common_1 = require("../config/common");
 const mongoose_paginate_v2_1 = __importDefault(require("mongoose-paginate-v2"));
 mongoose_paginate_v2_1.default.paginate.options = common_1.paginateOptions;
+const EnrollmentPersonSchema = new mongoose_1.Schema({
+    name: { type: String },
+    email: { type: String, required: true },
+    phone: { type: String, default: null },
+    location: { type: mongoose_1.Schema.Types.Mixed, default: null }
+}, { _id: false });
 const CourseEnrollmentSchema = new mongoose_1.Schema({
-    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: true },
+    userId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'User', required: false },
     courseId: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Course', required: true },
     status: { type: String, enum: ['ACTIVE', 'PENDING', 'DECLINED'], default: 'PENDING' },
     paymentStatus: { type: String, enum: ['PAID', 'PENDING', 'FAILED'], default: 'PENDING' },
@@ -42,12 +48,21 @@ const CourseEnrollmentSchema = new mongoose_1.Schema({
         expirationTime: Date,
         verified: { type: Boolean, default: false },
     },
+    applicant: { type: EnrollmentPersonSchema, required: false },
     extra: { type: mongoose_1.Schema.Types.Mixed, default: {} },
     qualification: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Master', required: true },
     mode: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Master', required: true },
     occupation: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Master', required: true },
     widget: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Widget', default: null }
 }, { timestamps: true });
+CourseEnrollmentSchema.index({ status: 1, createdAt: -1 });
+CourseEnrollmentSchema.index({ status: 1, updatedAt: -1 });
+CourseEnrollmentSchema.index({ courseId: 1, createdAt: -1 });
+CourseEnrollmentSchema.index({ userId: 1, createdAt: -1 });
+CourseEnrollmentSchema.index({ paymentStatus: 1, createdAt: -1 });
+CourseEnrollmentSchema.index({ paymentStatus: 1, updatedAt: -1 });
+CourseEnrollmentSchema.index({ createdAt: -1 });
+CourseEnrollmentSchema.index({ courseId: 1, 'applicant.email': 1, 'applicant.phone': 1 });
 CourseEnrollmentSchema.plugin(mongoose_paginate_v2_1.default);
 const CourseEnrollmentModel = mongoose_1.default.model('CourseEnrollment', CourseEnrollmentSchema);
 exports.default = CourseEnrollmentModel;

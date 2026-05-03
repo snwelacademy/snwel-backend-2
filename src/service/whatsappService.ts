@@ -27,7 +27,8 @@ const sendWhatsAppMessage = async (phoneNumber: string, message: string) => {
     try {
         const url = new URL(whatsappSettings.url);
         url.searchParams.append("api_key", whatsappSettings.appKey);
-        url.searchParams.append("number", phoneNumber);
+        const sanitizedNumber = phoneNumber.replace(/\D/g, '');
+        url.searchParams.append("number", sanitizedNumber);
         url.searchParams.append("msg", message);
 
         const response = await axios.get(url.toString());
