@@ -4,9 +4,6 @@ exports.resendOtpController = exports.verifyOtpController = exports.createByAnon
 const appResponse_1 = require("../utils/helpers/appResponse");
 const catchAsync_1 = require("../utils/helpers/catchAsync");
 const courseQueryService_1 = require("../service/courseQueryService");
-const userService_1 = require("../service/userService");
-const helpers_1 = require("../utils/helpers");
-const constants_1 = require("../config/constants");
 const getAllController = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const courses = await (0, courseQueryService_1.getAll)(Object.assign({}, req.query));
     return (0, appResponse_1.successResponse)(courses, res, { message: "Course Enrollments Fetched successfully!" });
@@ -20,35 +17,19 @@ const createController = (0, catchAsync_1.catchAsync)(async (req, res) => {
 exports.createController = createController;
 const createByAnonymous = (0, catchAsync_1.catchAsync)(async (req, res) => {
     const courseData = req.body;
-    const userExists = await (0, userService_1.getUserByEmail)(courseData.email);
-    if (userExists) {
-        const createdCourse = await (0, courseQueryService_1.create)({
-            userId: userExists._id,
-            courseId: courseData.courseId,
-            extra: courseData.extra,
-            qualification: courseData.qualification,
-            mode: courseData.mode,
-            occupation: courseData.occupation,
-            widget: courseData.widget
-        });
-        return (0, appResponse_1.successResponse)(createdCourse, res);
-    }
-    const newUser = await (0, userService_1.registerUser)({
-        email: courseData.email,
-        name: courseData.name,
-        password: (0, helpers_1.generateRandomPassword)(),
-        phone: courseData.phone,
-        roles: [constants_1.Constants.ROLES.USER],
-        location: courseData.location
-    });
     const newEnroll = await (0, courseQueryService_1.create)({
         courseId: courseData.courseId,
-        userId: newUser === null || newUser === void 0 ? void 0 : newUser._id,
         extra: courseData.extra,
         qualification: courseData.qualification,
         mode: courseData.mode,
         occupation: courseData.occupation,
-        widget: courseData.widget
+        widget: courseData.widget,
+        applicant: {
+            name: courseData.name,
+            email: courseData.email,
+            phone: courseData.phone,
+            location: courseData.location,
+        }
     });
     (0, appResponse_1.successResponse)(newEnroll, res);
 });
@@ -90,16 +71,17 @@ const verifyOtpController = (0, catchAsync_1.catchAsync)(async (req, res) => {
 });
 exports.verifyOtpController = verifyOtpController;
 const resendOtpController = (0, catchAsync_1.catchAsync)(async (req, res) => {
-    const { token } = req.body;
-    if (!token) {
-        return res.status(400).json({ message: 'Token is required' });
+    const { token, verificationId } = req.body;
+    if (!token && !verificationId) {
+        return (0, appResponse_1.errorResponse)({}, res, { status: 400, message: 'token or verificationId is required' });
     }
-    const result = await (0, courseQueryService_1.resendOtp)(token);
-    if (result.success) {
-        (0, appResponse_1.successResponse)({ token: result.token }, res, { message: 'OTP resent successfully' });
+    const result = await (0, courseQueryService_1.resendOtp)({ token, verificationId });
+    if (result && result.token) {
+        return (0, appResponse_1.successResponse)(result, res, { message: 'OTP resent successfully' });
     }
-    else {
-        res.status(400).json({ message: result.message });
+    if (result === null || result === void 0 ? void 0 : result.invalidToken) {
+        return (0, appResponse_1.errorResponse)({}, res, { message: 'Invalid token', status: 400 });
     }
+    return (0, appResponse_1.successResponse)(result, res);
 });
 exports.resendOtpController = resendOtpController;

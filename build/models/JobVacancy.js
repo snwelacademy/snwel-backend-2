@@ -73,8 +73,15 @@ jobVacancySchema.pre('save', async function (next) {
     next();
 });
 jobVacancySchema.plugin(mongoose_paginate_v2_1.default);
-jobVacancySchema.index({ title: 'text', companyName: 'text' });
-jobVacancySchema.index({ 'location.city': 1, 'location.country': 1, 'location.state': 1 });
 jobVacancySchema.index({ slug: 1 }, { unique: true });
+jobVacancySchema.index({ title: 'text', companyName: 'text' });
+jobVacancySchema.index({ status: 1 });
+jobVacancySchema.index({ isActive: 1, postedDate: -1 });
+jobVacancySchema.index({ 'location.city': 1 });
+jobVacancySchema.index({ 'location.state': 1 });
+jobVacancySchema.index({ 'location.country': 1 });
+jobVacancySchema.index({ categories: 1 });
+jobVacancySchema.index({ applicationDeadline: 1 });
+jobVacancySchema.index({ isFeatured: 1, postedDate: -1 });
 const JobVacancyModel = mongoose_1.default.model('JobVacancy', jobVacancySchema);
 exports.default = JobVacancyModel;

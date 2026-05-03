@@ -158,8 +158,9 @@ export class NotificationService {
             throw new Error("WhatsApp integration settings not configured");
         }
        
+        const sanitizedNumber = number.replace(/\D/g, '');
         const encodedMessage = encodeURIComponent(message);
-        const url = `${whatsappConfig.data.url}?api_key=${whatsappConfig.data.apiKey}&number=${number}&msg=${encodedMessage}`;
+        const url = `${whatsappConfig.data.url}?api_key=${whatsappConfig.data.apiKey}&number=${sanitizedNumber}&msg=${encodedMessage}`;
         try {
             const response = await axios.get(url);
             console.log(`WhatsApp message sent: ${JSON.stringify(response.data)}`);

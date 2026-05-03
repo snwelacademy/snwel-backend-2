@@ -56,4 +56,8 @@ UserSchema.methods.isValidPassword = async function (password) {
     const compare = await bcrypt_1.default.compare(password, user.password);
     return compare;
 };
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ isActive: 1, createdAt: -1 });
+UserSchema.index({ roles: 1 });
+UserSchema.index({ createdAt: -1 });
 exports.UserModel = mongoose_1.default.model('User', UserSchema);

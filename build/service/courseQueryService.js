@@ -1,4 +1,15 @@
 "use strict";
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) {
+            if (e.indexOf(p[i]) < 0 && Object.prototype.propertyIsEnumerable.call(s, p[i]))
+                t[p[i]] = s[p[i]];
+        }
+    return t;
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -11,43 +22,94 @@ const CourseEnrollment_1 = __importDefault(require("../models/CourseEnrollment")
 const constants_1 = require("../config/constants");
 const logger_1 = require("../utils/logger");
 const User_1 = require("../models/User");
-const templateFactory_1 = require("../email-templates/templateFactory");
 const notificationService_1 = require("./notificationService");
+const otpService_1 = require("./otpService");
+const buildApplicantFromUser = (user) => {
+    if (!user || !user.email)
+        return undefined;
+    return {
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        location: user.location
+    };
+};
+const isSameApplicant = (existing, incoming) => {
+    if (!existing || !incoming)
+        return false;
+    if (!existing.email || !incoming.email)
+        return false;
+    if (existing.email !== incoming.email)
+        return false;
+    const existingPhone = (existing.phone || '').trim();
+    const incomingPhone = (incoming.phone || '').trim();
+    if (!existingPhone && !incomingPhone)
+        return true;
+    return existingPhone === incomingPhone;
+};
+const resolveApplicant = async (queryData) => {
+    var _a;
+    let applicant = queryData.applicant;
+    if (!applicant && queryData.userId) {
+        const user = await User_1.UserModel.findById(queryData.userId);
+        applicant = buildApplicantFromUser(user);
+    }
+    if (!applicant || !applicant.email) {
+        throw new Error('Error: 400: Applicant email is required for enrollment');
+    }
+    applicant.phone = ((_a = applicant.phone) === null || _a === void 0 ? void 0 : _a.trim()) || undefined;
+    return applicant;
+};
 const create = async (queryData) => {
     var _a;
     try {
-        const exists = await CourseEnrollment_1.default.findOne({ userId: queryData.userId, courseId: queryData.courseId });
-        if (exists && ((_a = exists.otp) === null || _a === void 0 ? void 0 : _a.verified)) {
-            return {
-                isVerified: true,
-                enrollmentId: exists._id
-            };
+        const applicant = await resolveApplicant(queryData);
+        const candidates = await CourseEnrollment_1.default.find({
+            courseId: queryData.courseId,
+            'applicant.email': applicant.email,
+        });
+        const exists = candidates.find((enrollment) => isSameApplicant(enrollment.applicant, applicant));
+        if (exists && ((_a = exists.otp) === null || _a === void 0 ? void 0 : _a.verified) && isSameApplicant(exists.applicant, applicant)) {
+            throw new Error('Error: 400: Course Enrollment already found.');
         }
-        const user = await User_1.UserModel.findById(queryData.userId);
         const otpObject = (0, helpers_1.generateOTPObject)({});
-        const emailTemplate = await (0, templateFactory_1.otpEmailTemplate)(otpObject.otp);
-        const nfs = await notificationService_1.NotificationService.getInstance();
+        const sessionExpiresAt = new Date(Date.now() + constants_1.Constants.OTP.SESSION_TTL_MINUTES * 60 * 1000);
         if (exists) {
-            const updated = await exists.updateOne({ otp: otpObject });
-            await nfs.sendEmail((user === null || user === void 0 ? void 0 : user.email) || "", emailTemplate.subject, emailTemplate.template);
+            await exists.updateOne({
+                otp: otpObject,
+                applicant,
+                extra: Object.assign(Object.assign({}, (exists.extra || {})), { otpSession: {
+                        resendCount: 0,
+                        lastSentAt: new Date(),
+                        sessionExpiresAt,
+                    } })
+            });
+            await (0, otpService_1.sendOtp)(otpObject.otp, applicant === null || applicant === void 0 ? void 0 : applicant.phone, applicant === null || applicant === void 0 ? void 0 : applicant.email);
             return {
                 isVerified: false,
                 token: (0, helpers_1.generateJwtToken)({
                     courseId: queryData.courseId,
                     userId: queryData.userId,
-                    enrollmentId: updated._id
+                    enrollmentId: exists._id
                 })
             };
         }
         else {
-            let newCourseQuery = new CourseEnrollment_1.default(Object.assign(Object.assign({}, queryData), { otp: otpObject }));
+            const _b = queryData, { userId } = _b, rest = __rest(_b, ["userId"]);
+            let newCourseQuery = new CourseEnrollment_1.default(Object.assign(Object.assign({}, rest), { applicant, otp: otpObject, extra: {
+                    otpSession: {
+                        resendCount: 0,
+                        lastSentAt: new Date(),
+                        sessionExpiresAt,
+                    }
+                } }));
             await newCourseQuery.save();
-            await nfs.sendEmail((user === null || user === void 0 ? void 0 : user.email) || "", emailTemplate.subject, emailTemplate.template);
+            await (0, otpService_1.sendOtp)(otpObject.otp, applicant === null || applicant === void 0 ? void 0 : applicant.phone, applicant === null || applicant === void 0 ? void 0 : applicant.email);
             return {
                 isVerified: false,
                 token: (0, helpers_1.generateJwtToken)({
                     courseId: queryData.courseId,
-                    userId: queryData.userId,
+                    userId,
                     enrollmentId: newCourseQuery._id
                 })
             };
@@ -60,10 +122,16 @@ const create = async (queryData) => {
 exports.create = create;
 const createByClient = async (queryData) => {
     try {
-        const exists = await CourseEnrollment_1.default.findOne({ userId: queryData.userId, courseId: queryData.courseId });
+        const applicant = await resolveApplicant(queryData);
+        const candidates = await CourseEnrollment_1.default.find({
+            courseId: queryData.courseId,
+            'applicant.email': applicant.email,
+        });
+        const exists = candidates.find((enrollment) => isSameApplicant(enrollment.applicant, applicant));
         if (exists)
-            throw new Error("Course Enrollment already found.");
-        const newCourseQuery = new CourseEnrollment_1.default(queryData);
+            throw new Error('Error: 400: Course Enrollment already found.');
+        const _a = queryData, { userId } = _a, rest = __rest(_a, ["userId"]);
+        const newCourseQuery = new CourseEnrollment_1.default(Object.assign(Object.assign({}, rest), { applicant }));
         return await newCourseQuery.save();
     }
     catch (error) {
@@ -162,6 +230,7 @@ const updateById = async (id, updateData) => {
 exports.updateById = updateById;
 const deleteById = async (id) => {
     try {
+        console.log("Deleting course query with ID:", id);
         await CourseEnrollment_1.default.findByIdAndDelete(id).exec();
     }
     catch (error) {
@@ -170,6 +239,7 @@ const deleteById = async (id) => {
 };
 exports.deleteById = deleteById;
 async function verifyOtpAndUpdate(token, otp) {
+    var _a;
     try {
         const decoded = jsonwebtoken_1.default.verify(token, constants_1.Constants.TOKEN_SECRET);
         const { enrollmentId, courseId, userId } = decoded;
@@ -188,17 +258,44 @@ async function verifyOtpAndUpdate(token, otp) {
             };
         }
         const now = new Date();
-        if ((enrollment.otp.otp !== otp && Number(otp) !== constants_1.Constants.OTP.MASTER_OTP) || now > enrollment.otp.expirationTime) {
+        if (now > enrollment.otp.expirationTime) {
+            const session = ((_a = enrollment.extra) === null || _a === void 0 ? void 0 : _a.otpSession) || {};
+            const sessionExpiresAt = session.sessionExpiresAt ? new Date(session.sessionExpiresAt) : undefined;
+            const lastSentAt = session.lastSentAt ? new Date(session.lastSentAt) : undefined;
+            const resendCount = typeof session.resendCount === 'number' ? session.resendCount : 0;
+            const withinSession = sessionExpiresAt ? now < sessionExpiresAt : true;
+            const cooldown = constants_1.Constants.OTP.RESEND_COOLDOWN_SEC;
+            const sinceLast = lastSentAt ? Math.floor((now.getTime() - lastSentAt.getTime()) / 1000) : cooldown;
+            const retryAfter = Math.max(0, cooldown - sinceLast);
+            const resendAllowed = withinSession && resendCount < constants_1.Constants.OTP.MAX_RESENDS;
             return {
                 isVerified: false,
                 enrollmentId: null,
-                invalidOtp: true
+                invalidOtp: true,
+                otpExpired: true,
+                verificationId: enrollment._id.toString(),
+                resend_allowed: resendAllowed,
+                retry_after: retryAfter,
+                session_expires_at: sessionExpiresAt ? sessionExpiresAt.toISOString() : undefined,
+            };
+        }
+        if (enrollment.otp.otp !== otp && Number(otp) !== constants_1.Constants.OTP.MASTER_OTP) {
+            return {
+                isVerified: false,
+                enrollmentId: null,
+                invalidOtp: true,
+                otpExpired: false
             };
         }
         enrollment.otp.verified = true;
         await enrollment.save();
         const user = enrollment.userId;
-        await (0, notificationService_1.sendCourseEnquiryNotification)(enrollment.courseId, { email: user === null || user === void 0 ? void 0 : user.email, phone: user === null || user === void 0 ? void 0 : user.phone, userName: user === null || user === void 0 ? void 0 : user.name });
+        try {
+            await (0, notificationService_1.sendCourseEnquiryNotification)(enrollment.courseId, { email: user === null || user === void 0 ? void 0 : user.email, phone: user === null || user === void 0 ? void 0 : user.phone, userName: user === null || user === void 0 ? void 0 : user.name });
+        }
+        catch (error) {
+            logger_1.logger.error('Error sending course enquiry notification', error);
+        }
         return {
             isVerified: true,
             enrollmentId: enrollment._id
@@ -211,10 +308,30 @@ async function verifyOtpAndUpdate(token, otp) {
     }
 }
 exports.verifyOtpAndUpdate = verifyOtpAndUpdate;
-async function resendOtp(token) {
+async function resendOtp(params) {
+    var _a, _b, _c;
     try {
-        const decoded = jsonwebtoken_1.default.verify(token, constants_1.Constants.TOKEN_SECRET);
-        const { enrollmentId, courseId, userId } = decoded;
+        const now = new Date();
+        let enrollmentId = undefined;
+        if (params === null || params === void 0 ? void 0 : params.verificationId) {
+            enrollmentId = params.verificationId;
+        }
+        else if (params === null || params === void 0 ? void 0 : params.token) {
+            try {
+                const decoded = jsonwebtoken_1.default.verify(params.token, constants_1.Constants.TOKEN_SECRET);
+                enrollmentId = decoded.enrollmentId;
+            }
+            catch (err) {
+                return {
+                    invalidToken: true
+                };
+            }
+        }
+        if (!enrollmentId) {
+            return {
+                invalidToken: true
+            };
+        }
         const enrollment = await CourseEnrollment_1.default.findById(enrollmentId);
         if (!enrollment) {
             return {
@@ -223,16 +340,60 @@ async function resendOtp(token) {
                 invalidToken: true,
             };
         }
+        const session = ((_a = enrollment.extra) === null || _a === void 0 ? void 0 : _a.otpSession) || {};
+        const sessionExpiresAt = session.sessionExpiresAt ? new Date(session.sessionExpiresAt) : new Date(Date.now() + constants_1.Constants.OTP.SESSION_TTL_MINUTES * 60 * 1000);
+        const lastSentAt = session.lastSentAt ? new Date(session.lastSentAt) : undefined;
+        const resendCount = typeof session.resendCount === 'number' ? session.resendCount : 0;
+        const withinSession = now < sessionExpiresAt;
+        const cooldown = constants_1.Constants.OTP.RESEND_COOLDOWN_SEC;
+        const sinceLast = lastSentAt ? Math.floor((now.getTime() - lastSentAt.getTime()) / 1000) : cooldown;
+        const retryAfter = Math.max(0, cooldown - sinceLast);
+        const canResend = withinSession && resendCount < constants_1.Constants.OTP.MAX_RESENDS && retryAfter === 0;
+        if (!withinSession) {
+            return {
+                resend_allowed: false,
+                reason: 'SESSION_EXPIRED',
+                retry_after: 0,
+                session_expires_at: sessionExpiresAt.toISOString(),
+            };
+        }
+        if (resendCount >= constants_1.Constants.OTP.MAX_RESENDS) {
+            return {
+                resend_allowed: false,
+                reason: 'RESEND_LIMIT_REACHED',
+                retry_after: retryAfter,
+                session_expires_at: sessionExpiresAt.toISOString(),
+            };
+        }
+        if (retryAfter > 0) {
+            return {
+                resend_allowed: false,
+                reason: 'COOLDOWN',
+                retry_after: retryAfter,
+                session_expires_at: sessionExpiresAt.toISOString(),
+            };
+        }
         const newOtp = (0, helpers_1.generateOTPObject)({});
         enrollment.otp = newOtp;
+        enrollment.extra = Object.assign(Object.assign({}, (enrollment.extra || {})), { otpSession: {
+                resendCount: resendCount + 1,
+                lastSentAt: now,
+                sessionExpiresAt,
+            } });
         await enrollment.save();
+        const user = await User_1.UserModel.findById(enrollment.userId);
+        await (0, otpService_1.sendOtp)(newOtp.otp, user === null || user === void 0 ? void 0 : user.phone, user === null || user === void 0 ? void 0 : user.email);
         const newToken = (0, helpers_1.generateJwtToken)({
             enrollmentId: enrollment._id.toString(),
             courseId: enrollment.courseId,
             userId: enrollment.userId
         });
         return {
-            token: newToken
+            token: newToken,
+            otp_expires_at: ((_c = (_b = newOtp.expirationTime) === null || _b === void 0 ? void 0 : _b.toISOString) === null || _c === void 0 ? void 0 : _c.call(_b)) || undefined,
+            session_expires_at: sessionExpiresAt.toISOString(),
+            resend_allowed: true,
+            retry_after: constants_1.Constants.OTP.RESEND_COOLDOWN_SEC,
         };
     }
     catch (error) {

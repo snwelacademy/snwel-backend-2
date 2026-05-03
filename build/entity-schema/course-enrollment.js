@@ -2,8 +2,14 @@
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.createEnrollmentAnonymously = exports.updateCourseEnrollment = exports.createCourseEnrollment = void 0;
 const zod_1 = require("zod");
+const enrollmentApplicantSchema = zod_1.z.object({
+    name: zod_1.z.string().optional(),
+    email: zod_1.z.string().email(),
+    phone: zod_1.z.string().optional(),
+    location: zod_1.z.any().optional(),
+});
 exports.createCourseEnrollment = zod_1.z.object({
-    userId: zod_1.z.string(),
+    userId: zod_1.z.string().optional(),
     courseId: zod_1.z.string(),
     status: zod_1.z.enum(['ACTIVE', 'PENDING', 'DECLINED']).default('PENDING').optional(),
     paymentStatus: zod_1.z.enum(['PAID', 'PENDING', 'FAILED']).default('PENDING').optional(),
@@ -15,7 +21,8 @@ exports.createCourseEnrollment = zod_1.z.object({
     qualification: zod_1.z.string(),
     mode: zod_1.z.string(),
     occupation: zod_1.z.string(),
-    widget: zod_1.z.string().optional()
+    widget: zod_1.z.string().optional(),
+    applicant: enrollmentApplicantSchema.optional(),
 });
 exports.updateCourseEnrollment = zod_1.z.object({
     _id: zod_1.z.string()

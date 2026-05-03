@@ -37,5 +37,8 @@ const PermissionSchema = new mongoose_1.Schema({
     code: { type: String, required: true, unique: true },
     module: { type: String, required: true }
 }, { timestamps: true });
+PermissionSchema.index({ code: 1 }, { unique: true });
+PermissionSchema.index({ module: 1 });
+PermissionSchema.index({ module: 1, code: 1 });
 PermissionSchema.plugin(mongoose_paginate_v2_1.default);
 exports.PermissionModel = mongoose_1.default.model('Permission', PermissionSchema);

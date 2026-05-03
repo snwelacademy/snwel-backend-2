@@ -29,6 +29,9 @@ const getAllJobVacancies = async (options) => {
             const searchRegex = new RegExp(filter['location'], 'i');
             query.$or = [{ "location.city": searchRegex }, { "location.country": searchRegex }, { "location.state": searchRegex }];
         }
+        if (filter && filter['type']) {
+            query.employmentType = filter['type'];
+        }
         const skip = (page - 1) * limit;
         const jobVacancies = await JobVacancy_1.default.find(query)
             .populate('categories', 'name')

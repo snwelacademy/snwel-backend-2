@@ -1,0 +1,21 @@
+"use strict";
+var __importDefault = (this && this.__importDefault) || function (mod) {
+    return (mod && mod.__esModule) ? mod : { "default": mod };
+};
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.AdminCourseRouter = void 0;
+const express_1 = __importDefault(require("express"));
+const passport_1 = __importDefault(require("passport"));
+const permissionMiddleware_1 = require("../middleware/permissionMiddleware");
+const courseController_1 = require("../admin/controllers/courseController");
+const statisticsController_1 = require("../controllers/admin/statisticsController");
+const router = express_1.default.Router();
+exports.AdminCourseRouter = router;
+router.get('/statistics', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_VIEW'), statisticsController_1.getCourseStatistics);
+router.get('/', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_VIEW'), courseController_1.getAllCoursesController);
+router.post('/', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_CREATE'), courseController_1.createCourseController);
+router.get('/byId/:courseId', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_VIEW'), courseController_1.getCourseByIdController);
+router.put('/partial-update/:courseId', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_UPDATE'), courseController_1.partialUpdateCourseController);
+router.put('/:courseId', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_UPDATE'), courseController_1.updateCourseController);
+router.delete('/:courseId', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_DELETE'), courseController_1.deleteCourseController);
+router.get('/:slug', passport_1.default.authenticate('jwt', { session: false }), (0, permissionMiddleware_1.checkPermission)('COURSE_VIEW'), courseController_1.getCourseBySlugController);

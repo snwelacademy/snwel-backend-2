@@ -45,6 +45,7 @@ const getAllMasterItems = async (options) => {
             query = Object.assign(Object.assign({}, query), rest);
         }
         const skip = (page - 1) * limit;
+        console.log({ query });
         const masterItems = await MasterModel_1.default.find(query)
             .skip(skip)
             .limit(limit)

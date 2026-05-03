@@ -20,6 +20,10 @@ const enquirySchema = new mongoose_1.Schema({
     consentGiven: { type: Boolean, required: true, default: false },
     otpValidated: { type: Boolean, required: true, default: false },
 }, { timestamps: true });
+enquirySchema.index({ createdAt: -1 });
+enquirySchema.index({ enquiryType: 1, createdAt: -1 });
+enquirySchema.index({ businessEmail: 1 });
+enquirySchema.index({ otpValidated: 1 });
 enquirySchema.plugin(mongoose_paginate_v2_1.default);
 const SnwelEnquiry = (0, mongoose_1.model)('SnwelEnquiry', enquirySchema);
 exports.default = SnwelEnquiry;
