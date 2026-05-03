@@ -26,12 +26,11 @@ const sendWhatsAppMessage = async (phoneNumber: string, message: string) => {
     }
     try {
         const url = new URL(whatsappSettings.url);
-        url.searchParams.append( "api_key", whatsappSettings.appKey);
-        url.searchParams.append( "sender", whatsappSettings.authKey);
-        url.searchParams.append( "to", phoneNumber);
-        url.searchParams.append( "message", phoneNumber);
+        url.searchParams.append("api_key", whatsappSettings.appKey);
+        url.searchParams.append("number", phoneNumber);
+        url.searchParams.append("msg", message);
 
-        const response = await axios.post(url.toString());
+        const response = await axios.get(url.toString());
         return response.data;
     } catch (error) {
         console.error('Error sending WhatsApp message:', error);

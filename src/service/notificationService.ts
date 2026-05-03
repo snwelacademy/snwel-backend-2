@@ -159,7 +159,7 @@ export class NotificationService {
         }
        
         const encodedMessage = encodeURIComponent(message);
-        const url = `${whatsappConfig.data.url}?api_key=${whatsappConfig.data.apiKey}&sender=${whatsappConfig.data.phoneNumber}&number=${number}&message=${encodedMessage}`;
+        const url = `${whatsappConfig.data.url}?api_key=${whatsappConfig.data.apiKey}&number=${number}&msg=${encodedMessage}`;
         try {
             const response = await axios.get(url);
             console.log(`WhatsApp message sent: ${JSON.stringify(response.data)}`);
